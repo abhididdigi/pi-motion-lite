@@ -95,13 +95,38 @@ def getStreamImage(daymode):
             camera.capture(stream, format='rgb')
             return stream.array
 
+#----------------------------------------------------------------------------------------------
+# hardcoded settings to idenfity the night vs day logging.
+
+def registerDayOrNight():
+	time_of_the_day = datetime.datetime.time(datetime.datetime.now())
+	# setting the night mode from 1 in the night. pretty sure my family will be asleep by then.
+	night_hours = [01,02,03,04,05,06]
+	if time_of_the_day in night_hours:
+		return False
+
+	# any other time is day light. 	
+	return True
+
 #-----------------------------------------------------------------------------------------------           
 def Main():
-    dayTime = True
-    msgStr = "Checking for Motion dayTime=%s threshold=%i sensitivity=%i" % ( dayTime, threshold, sensitivity)
+	dayTime = registerDayOrNight()
+   	msgStr = "Checking for Motion dayTime=%s threshold=%i sensitivity=%i" % ( dayTime, threshold, sensitivity)
     showMessage("Main",msgStr)
     stream1 = getStreamImage(dayTime)
+    flag_night = False
     while True:
+    	dayTime = registerDayOrNight()
+
+    	# it just turned a night...
+    	if dayTime == False and flag_night == False:
+    		stream1 = getStreamImage(dayTime)
+    		is_night = True
+    	# it just turned day..
+    	if dayTime == True and flag_night == True:
+    		stream1 = getStreamImage(dayTime)
+    		is_night = False
+    	
         stream2 = getStreamImage(dayTime)
         if checkForMotion(stream1, stream2):
             userMotionCode()
@@ -118,5 +143,4 @@ if __name__ == '__main__':
         print("  Exiting Program")
         print("+++++++++++++++++++")
         print("")
-               
-            
+                          
