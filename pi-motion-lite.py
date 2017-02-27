@@ -30,7 +30,7 @@ SECONDS2MICRO = 1000000  # Constant for converting Shutter Speed in Seconds to M
 nightMaxShut = int(nightShut * SECONDS2MICRO)
 nightMaxISO = int(nightISO)
 nightSleepSec = 8  # Seconds of long exposure for camera to adjust to low light
-is_night = False
+flag_night = False
 
 
 # -----------------------------------------------------------------------------------------------
