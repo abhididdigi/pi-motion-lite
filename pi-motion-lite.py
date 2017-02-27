@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 # Minimal Motion Detection Logic written by Claude Pageau Dec-2014
 
 import time
@@ -8,71 +10,100 @@ import picamera.array
 from fractions import Fraction
 
 # Logging
-verbose = True     # False= Non True=Display showMessage
+
+verbose = True  # False= Non True=Display showMessage
 
 # Motion Settings
-threshold = 30     # How Much a pixel has to change
+
+threshold = 30  # How Much a pixel has to change
 sensitivity = 300  # How Many pixels need to change for motion detection
 
 # Camera Settings
+
 testWidth = 128
 testHeight = 80
-nightShut = 5.5    # seconds Night shutter Exposure Time default = 5.5  Do not exceed 6 since camera may lock up
+nightShut = 5.5  # seconds Night shutter Exposure Time default = 5.5  Do not exceed 6 since camera may lock up
 nightISO = 800
-if nightShut > 6:
+if nightShut > 06:
     nightShut = 5.9
-SECONDS2MICRO = 1000000  # Constant for converting Shutter Speed in Seconds to Microseconds    
+SECONDS2MICRO = 1000000  # Constant for converting Shutter Speed in Seconds to Microseconds
 nightMaxShut = int(nightShut * SECONDS2MICRO)
 nightMaxISO = int(nightISO)
-nightSleepSec = 8   # Seconds of long exposure for camera to adjust to low light 
+nightSleepSec = 8  # Seconds of long exposure for camera to adjust to low light
+is_night = False
 
-#-----------------------------------------------------------------------------------------------           
+
+# -----------------------------------------------------------------------------------------------
+
 def userMotionCode():
+
     # Users can put code here that needs to be run prior to taking motion capture images
     # Eg Notify or activate something.
     # User code goes here
-    
-    msgStr = "Motion Found So Do Something ..."
-    showMessage("userMotionCode",msgStr)  
+
+    msgStr = 'Motion Found So Do Something ...'
+    showMessage('userMotionCode', msgStr)
     return
-    
-#-----------------------------------------------------------------------------------------------               
+
+
+# -----------------------------------------------------------------------------------------------
+
 def showTime():
     rightNow = datetime.datetime.now()
-    currentTime = "%04d%02d%02d-%02d:%02d:%02d" % (rightNow.year, rightNow.month, rightNow.day, rightNow.hour, rightNow.minute, rightNow.second)
-    return currentTime    
+    currentTime = '%04d%02d%02d-%02d:%02d:%02d' % (
+        rightNow.year,
+        rightNow.month,
+        rightNow.day,
+        rightNow.hour,
+        rightNow.minute,
+        rightNow.second,
+        )
+    return currentTime
 
-#-----------------------------------------------------------------------------------------------             
+
+# -----------------------------------------------------------------------------------------------
+
 def showMessage(functionName, messageStr):
     if verbose:
         now = showTime()
-        print ("%s %s - %s " % (now, functionName, messageStr))
+        print '%s %s - %s ' % (now, functionName, messageStr)
     return
 
-#-----------------------------------------------------------------------------------------------               
+
+# -----------------------------------------------------------------------------------------------
+
 def checkForMotion(data1, data2):
+
     # Find motion between two data streams based on sensitivity and threshold
+
     motionDetected = False
-    pixColor = 1 # red=0 green=1 blue=2
-    pixChanges = 0;
+    pixColor = 01  # red=0 green=1 blue=2
+    pixChanges = 0
     for w in range(0, testWidth):
         for h in range(0, testHeight):
+
             # get the diff of the pixel. Conversion to int
             # is required to avoid unsigned short overflow.
-            pixDiff = abs(int(data1[h][w][pixColor]) - int(data2[h][w][pixColor]))
-            if  pixDiff > threshold:
-                pixChanges += 1
+
+            pixDiff = abs(int(data1[h][w][pixColor])
+                          - int(data2[h][w][pixColor]))
+            if pixDiff > threshold:
+                pixChanges += 01
             if pixChanges > sensitivity:
-                break; # break inner loop
+                break  # break inner loop
         if pixChanges > sensitivity:
-            break; #break outer loop.
+            break  # break outer loop.
     if pixChanges > sensitivity:
         motionDetected = True
-    return motionDetected 
-    
-#-----------------------------------------------------------------------------------------------             
+    return motionDetected
+
+
+# -----------------------------------------------------------------------------------------------
+
 def getStreamImage(daymode):
+
     # Capture an image stream to memory based on daymode
+
     isDay = daymode
     with picamera.PiCamera() as camera:
         time.sleep(.5)
@@ -80,67 +111,91 @@ def getStreamImage(daymode):
         with picamera.array.PiRGBArray(camera) as stream:
             if isDay:
                 camera.exposure_mode = 'auto'
-                camera.awb_mode = 'auto' 
+                camera.awb_mode = 'auto'
             else:
-                # Take Low Light image            
+
+                # Take Low Light image
                 # Set a framerate of 1/6fps, then set shutter
                 # speed to 6s and ISO to 800
-                camera.framerate = Fraction(1, 6)
+
+                camera.framerate = Fraction(01, 06)
                 camera.shutter_speed = nightMaxShut
                 camera.exposure_mode = 'off'
                 camera.iso = nightMaxISO
+
                 # Give the camera a good long time to measure AWB
                 # (you may wish to use fixed AWB instead)
-                time.sleep( nightSleepSec )
+
+                time.sleep(nightSleepSec)
             camera.capture(stream, format='rgb')
             return stream.array
 
-#----------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------
 # hardcoded settings to idenfity the night vs day logging.
 
 def registerDayOrNight():
-	time_of_the_day = datetime.datetime.time(datetime.datetime.now())
-	# setting the night mode from 1 in the night. pretty sure my family will be asleep by then.
-	night_hours = [01,02,03,04,05,06]
-	if time_of_the_day in night_hours:
-		return False
+    time_of_the_day = datetime.datetime.time(datetime.datetime.now())
 
-	# any other time is day light. 	
-	return True
+    # setting the night mode from 1 in the night. pretty sure my family will be asleep by then.
 
-#-----------------------------------------------------------------------------------------------           
+    night_hours = [
+        01,
+        02,
+        03,
+        04,
+        05,
+        06,
+        ]
+    if time_of_the_day in night_hours:
+        return False
+    else:
+        return True
+
+
+# -----------------------------------------------------------------------------------------------
+
 def Main():
-	dayTime = registerDayOrNight()
-   	msgStr = "Checking for Motion dayTime=%s threshold=%i sensitivity=%i" % ( dayTime, threshold, sensitivity)
-    showMessage("Main",msgStr)
-    stream1 = getStreamImage(dayTime)
-    flag_night = False
-    while True:
-    	dayTime = registerDayOrNight()
+    dayTime = registerDayOrNight()
 
-    	# it just turned a night...
-    	if dayTime == False and flag_night == False:
-    		stream1 = getStreamImage(dayTime)
-    		is_night = True
-    	# it just turned day..
-    	if dayTime == True and flag_night == True:
-    		stream1 = getStreamImage(dayTime)
-    		is_night = False
-    	
+    msgStr = \
+        'Checking for Motion dayTime=%s threshold=%i sensitivity=%i' \
+        % (dayTime, threshold, sensitivity)
+    showMessage('Main', msgStr)
+    stream1 = getStreamImage(dayTime)
+    while True:
+        dayTime = registerDayOrNight()
+
+        # it just turned a night...
+
+        if dayTime == False and flag_night == False:
+            stream1 = getStreamImage(dayTime)
+            is_night = True
+
+        # it just turned day..
+
+        if dayTime == True and flag_night == True:
+            stream1 = getStreamImage(dayTime)
+            is_night = False
+
         stream2 = getStreamImage(dayTime)
         if checkForMotion(stream1, stream2):
             userMotionCode()
-        stream1 = stream2        
+        stream1 = stream2
     return
-     
-#-----------------------------------------------------------------------------------------------           
+
+
+# -----------------------------------------------------------------------------------------------
+
 if __name__ == '__main__':
     try:
         Main()
     finally:
-        print("")
-        print("+++++++++++++++++++")
-        print("  Exiting Program")
-        print("+++++++++++++++++++")
-        print("")
-                          
+        print ''
+        print '+++++++++++++++++++'
+        print '  Exiting Program'
+        print '+++++++++++++++++++'
+        print ''
+
+
+			
